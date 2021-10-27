@@ -1,0 +1,42 @@
+version: "2"
+services:
+  app:
+    container_name: game_app
+    build: ./app
+    links:
+      - db
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    volumes:
+      - /home/andrew/Development/game/app:/app
+    environment:
+      FLASK_ENV: development
+
+  db:
+    container_name: game_db
+    image: mysql:5.7
+    ports:
+      - 33060:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/:rw
+
+  jupyter:
+    container_name: game_jupyter
+    image: jupyter/datascience-notebook
+    links:
+      - app
+      - db
+    ports:
+      - 8888:8888
+    restart: always
+    volumes:
+      - ./app:/home/jovyan/app
+      - ./db:/home/jovyan/db
+      - ./dev:/home/jovyan/dev
+      - /home/andrew:/jovyan/home
+    environment:
+      "JUPYTER_ENABLE_LAB": "yes"
+    command: "start-notebook.sh --ServerApp.token='' --ServerApp.password=''"
