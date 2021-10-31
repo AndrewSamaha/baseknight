@@ -9,7 +9,7 @@ services:
       - "5000:5000"
       - "5001:5001"
     volumes:
-      - /home/andrew/Development/game/app:/app
+      - ./app:/app
     environment:
       FLASK_ENV: development
 

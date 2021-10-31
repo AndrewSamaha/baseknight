@@ -46,7 +46,7 @@ class DB():
         try:
             value = self.query(f"select value from {table} where name = '{name}';")
             value = value[0][0]
-        except mysql.connection.Error as err:
+        except mysql.connector.Error as err:
             print(err)
         return value
     
@@ -60,7 +60,7 @@ class DB():
         try:
             value = self.query(f"select value from {table} where name = '{name}';")
             value = value[0][0]
-        except mysql.connection.Error as err:
+        except mysql.connector.Error as err:
             print(err)
         return value
 

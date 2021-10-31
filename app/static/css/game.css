@@ -1,0 +1,10 @@
+body {
+    display: grid;
+    grid-template-columns: 100px 1fr 100px;
+    padding: 0px;
+}
+.uicontainer {
+    border-color: black;
+    border-style: solid;
+    margin: 0px;
+}
