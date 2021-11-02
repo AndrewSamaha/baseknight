@@ -14,6 +14,11 @@ let GameState = {
     grid: null
 }
 
+let ClientParams = {
+    grid_height: 11,
+    grid_width: 11
+}
+
 
 let state_index = -1;
 let init_states = [
@@ -105,16 +110,27 @@ function getTile(x,y) {
 
 
 function create_game_ui() {
+    let styleHtml = "";
+    for (key in GameParams.tile_types) {
+        let type = GameParams.tile_types[key]
+        styleHtml += ".tile_type_" + type.name + " " + type.css.replace(/\"/g,"") + " "
+    }
+    $("<style>").prop("type","text/css").html(styleHtml).appendTo("head")
+
     const cell_height = 30, cell_width = 30;
-    const grid_height = 10, grid_width = 10;
+    const grid_height = ClientParams.grid_height, grid_width = ClientParams.grid_width;
     let gtc = '1fr', gtr = '1fr'
     for (var i=1;i<grid_width;i++) gtc += ' 1fr'
     for (var i=1;i<grid_height;i++) gtr += ' 1fr'
+
     $("#main").css('display','grid')
     $("#main").css('grid-template-columns', gtc)
     $("#main").css('grid-template-rows', gtr)
     $("#main").css('grid-gap','0px')
+    GameState.grid = [] 
+
     for (var y = 0; y < grid_height; y++) {
+        let row = []
         for (var x = 0; x < grid_width; x++) {
             let cell = $("<div></div>")
             cell.html(x + "," + y)
@@ -124,14 +140,52 @@ function create_game_ui() {
             cell.css('border-style','inset')
             cell.css('border-color','gray')
             $("#main").append(cell)
+            row.push(cell)
         }
+        GameState.grid.push(row)
     }
     state_index++;
 }
 
+function getWorldCoordinates(gridX, gridY) {
+    return [
+        GameState.cursorX - Math.floor(gridX/2),
+        GameState.cursorY - Math.floor(gridY/2)
+    ]
+}
+function getWorldTile(gridX, gridY) {
+    const grid_height = ClientParams.grid_height, grid_width = ClientParams.grid_width;
+    let key = (GameState.cursorX - Math.floor(grid_width/2) + gridX) + ',' + (GameState.cursorY - Math.floor(grid_height/2) + gridY);
+    if (key in GameState.tiles) return [GameState.tiles[key], key]
+    else return [null, null]
+}
+function clearTileClasses() {
+    for (key in GameParams.tile_types) {
+        let type = GameParams.tile_types[key]
+        $(".tile_type_" + type.name).removeClass("tile_type_" + type.name)
+    }
+}
+function render() {
+    const grid_height = ClientParams.grid_height, grid_width = ClientParams.grid_width;
+    clearTileClasses()
+    for (var y = 0; y < grid_height; y++) {
+        for (var x = 0; x < grid_width; x++) {
+            let tile = getWorldTile(x, y);
+            let key = tile[1]
+            tile_type_id = tile[0]
+            if (tile !== null) {
+                GameState.grid[x][y].html(x + "," + y + "<br>" + key + "<br>" + tile_type_id)
+                GameState.grid[x][y].addClass("tile_type_" + GameParams.tile_types[tile_type_id].name)
+            }
+        }
+    }
+    
+    console.log("cursor: " + GameState.cursorX + "," + GameState.cursorY)
+}
+
 // MAIN
 function main_game_loop() {
-
+    render()
 }
 function main_game_loop_params_success(data, textStatus, jqXHR) {
 
