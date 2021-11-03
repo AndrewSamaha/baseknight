@@ -1,5 +1,21 @@
+// Dragable Vars
+let dragItem = null;
+let container = null;
+let mapDiv = null;
+
+let active = false;
+let preDragX;
+let preDragY;
+let currentX;
+let currentY;
+let initialX;
+let initialY;
+let xOffset = 0;
+let yOffset = 0;
+
 
 let start, previousTimeStamp;
+
 
 let GameParams = {
     StartingCoordinates: null,
@@ -16,7 +32,10 @@ let GameState = {
 
 let ClientParams = {
     grid_height: 11,
-    grid_width: 11
+    grid_width: 11,
+    cell_size: 50,
+    pixel_offset_X: 0,
+    pixel_offset_Y: 0
 }
 
 
@@ -32,6 +51,8 @@ let init_states = [
 
 // INIT
 function init_request_params() {
+    setupDragging()
+
     let paramStr = ""
     for (const property in GameParams) {
         paramStr += property + "&"
@@ -117,32 +138,40 @@ function create_game_ui() {
     }
     $("<style>").prop("type","text/css").html(styleHtml).appendTo("head")
 
-    const cell_height = 30, cell_width = 30;
+    const cell_height = ClientParams.cell_size, cell_width = ClientParams.cell_size;
     const grid_height = ClientParams.grid_height, grid_width = ClientParams.grid_width;
     let gtc = '1fr', gtr = '1fr'
-    for (var i=1;i<grid_width;i++) gtc += ' 1fr'
-    for (var i=1;i<grid_height;i++) gtr += ' 1fr'
+    for (let i=1;i<grid_width;i++) gtc += ' 1fr'
+    for (let i=1;i<grid_height;i++) gtr += ' 1fr'
 
-    $("#main").css('display','grid')
-    $("#main").css('grid-template-columns', gtc)
-    $("#main").css('grid-template-rows', gtr)
-    $("#main").css('grid-gap','0px')
+    if (0) {
+        $("#main").css('display','grid')
+        $("#main").css('grid-template-columns', gtc)
+        $("#main").css('grid-template-rows', gtr)
+        $("#main").css('grid-gap','0px')
+    }
     GameState.grid = [] 
+    let i = 0
 
-    for (var y = 0; y < grid_height; y++) {
-        let row = []
-        for (var x = 0; x < grid_width; x++) {
+    // it's necessary to build this one column at a time such that
+    // you can index GameState.grid using [x][y]
+    for (var x = 0; x < grid_width; x++) {
+        let column = []
+        for (var y = 0; y < grid_height; y++) {    
             let cell = $("<div></div>")
-            cell.html(x + "," + y)
+            i++
+            let diagonal_offset = y % 2 * ClientParams.cell_size / 2
+            cell.html(i + '<br>' + x + "," + y)
             cell.addClass('cell')
-            //cell.css('width',cell_width)
-            //cell.css('height',cell_height)
-            cell.css('border-style','inset')
-            cell.css('border-color','gray')
+            cell.css('width',cell_width)
+            cell.css('height',cell_height)
+            cell.css('left', x * ClientParams.cell_size + diagonal_offset)
+            cell.css('top', y * ClientParams.cell_size)
+
             $("#main").append(cell)
-            row.push(cell)
+            column.push(cell)
         }
-        GameState.grid.push(row)
+        GameState.grid.push(column)
     }
     state_index++;
 }
@@ -168,19 +197,34 @@ function clearTileClasses() {
 function render() {
     const grid_height = ClientParams.grid_height, grid_width = ClientParams.grid_width;
     clearTileClasses()
+    let i = 0
     for (var y = 0; y < grid_height; y++) {
         for (var x = 0; x < grid_width; x++) {
+            i++
             let tile = getWorldTile(x, y);
             let key = tile[1]
             tile_type_id = tile[0]
             if (tile !== null) {
-                GameState.grid[x][y].html(x + "," + y + "<br>" + key + "<br>" + tile_type_id)
-                GameState.grid[x][y].addClass("tile_type_" + GameParams.tile_types[tile_type_id].name)
+                GameState.grid[x][y].html(i + '<br>x: ' + x + ", " + y + "<br>" + key + "<br>" + tile_type_id)
+                try {
+                    GameState.grid[x][y].addClass("tile_type_" + GameParams.tile_types[tile_type_id].name)
+                } catch {
+                    //console.log(`GameState.grid[${x}][${y}] tile_type_id=${tile_type_id}`)
+                }
+                
             }
         }
     }
-    
-    console.log("cursor: " + GameState.cursorX + "," + GameState.cursorY)
+    $('#cursorpos').html(`cursorX=${GameState.cursorX},${GameState.cursorY}`)
+    $('#pixel_offset').html(`ClientParams.pixel_offset=${ClientParams.pixel_offset_X},${ClientParams.pixel_offset_Y}`)
+    $('#initial').html(`initial=${initialX},${initialY}`)
+    $('#current').html(`current=${currentX},${currentY}`)
+    $('#preDrag').html(`preDrag=${preDragX},${preDragY}`)
+    let l=-777, t=-777;
+    l = $('#draggy').position().left
+    t = $('#draggy').position().top
+    $('#draggyinfo').html(`draggy=${l},${t}`)
+   // console.log("cursor: " + GameState.cursorX + "," + GameState.cursorY)
 }
 
 // MAIN
@@ -205,7 +249,7 @@ function tic(timestamp) {
         }
     }
 
-    if (elapsed < 20000) { 
+    if (1) { 
         previousTimeStamp = timestamp
         window.requestAnimationFrame(tic);
     } else {
