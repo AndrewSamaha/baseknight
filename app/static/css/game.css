@@ -46,6 +46,10 @@
     position: absolute;
     font-size:.7em;
 }
+.cell:hover {
+    border: 1px solid rgba(255, 136, 136, .5);
+    background-color: brown;
+}
 
 #draggy {
     position: absolute;
@@ -57,6 +61,9 @@
 
 #debug {
     position: absolute;
+    background-color: rgba(245, 245, 245, .65);
     right: 20px;
     top: 20px;
+    z-index: 30;
+    padding: 20px;
 }

@@ -4,7 +4,7 @@ class WorldServer():
         self.db = db
         self.tg = tg
     
-    def getChunk(self, x, y, radius = 9, generateMissing=False):
+    def getChunk(self, x, y, radius = 15, generateMissing=False):
         """
         Returns a chunk of the world and relevant game states around a given
         x,y coordinate.

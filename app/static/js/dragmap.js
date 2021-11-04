@@ -34,13 +34,20 @@ function dragStart(e) {
     initialY = currentY;
 
     active = false;
-    console.log('drag end')
-    console.log('  translating map and draggy to pixel_offset')
-    console.log(`  ClientParams.pixel_offset=${ClientParams.pixel_offset_X},${ClientParams.pixel_offset_Y}`)
+    if (currentX == 0 && currentY == 0) {
+        console.log('dragEnd')
+        console.log('  aborting, no drag happened')    
+        return
+    }
+    // console.log('drag end')
+    // console.log('  translating map and draggy to pixel_offset')
+    // console.log(`  ClientParams.pixel_offset=${ClientParams.pixel_offset_X},${ClientParams.pixel_offset_Y}`)
     
-    let DisplacementX = currentX + ClientParams.pixel_offset_X //-preDragX + ClientParams.pixel_offset_X
-    let DisplacementY = currentY + ClientParams.pixel_offset_Y //-preDragY + ClientParams.pixel_offset_Y
-    console.log(`  total displacement ${DisplacementX}, ${DisplacementY}`)
+    let DisplacementX = currentX + ClientParams.pixel_offset_X 
+    let DisplacementY = currentY + ClientParams.pixel_offset_Y 
+    console.log('dragEnd')
+    console.log(`  total displacement=${DisplacementX}, ${DisplacementY}`)
+    console.log(`             current=${currentX}, ${currentY}`)
     dragMap(DisplacementX, DisplacementY)
     
     setTranslate(ClientParams.pixel_offset_X, ClientParams.pixel_offset_Y, mapDiv);
@@ -69,6 +76,7 @@ function dragStart(e) {
 
       xOffset = currentX;
       yOffset = currentY;
+      console.log(`DRAG ${xOffset}, ${yOffset}`)
 
       setTranslate(currentX + ClientParams.pixel_offset_X, 
                    currentY + ClientParams.pixel_offset_Y, 
@@ -79,25 +87,30 @@ function dragStart(e) {
     }
   }
 
+  function getNCellsAhead(x1, y1, x2, y2, n) {
+    let xdiff = x2 - x1
+    let ydiff = y2 - y1
+  }
+
   function dragMap(x, y) {
-      let newCursorX = Number(GameState.cursorX) - Math.floor(x / ClientParams.cell_size)
-      let newCursorY = Number(GameState.cursorY) - Math.floor(y / ClientParams.cell_size)
-      let new_pixel_offset_X = x % ClientParams.cell_size
-      let new_pixel_offset_Y = y % ClientParams.cell_size
+      let newCursorX = Number(GameState.cursorX) - Math.floor((x - ClientParams.pixel_offset_X*2) / ClientParams.cell_size_X) 
+      let newCursorY = Number(GameState.cursorY) - Math.floor((y - ClientParams.pixel_offset_Y) / ClientParams.cell_size_Y)
+      let new_pixel_offset_X = x % ClientParams.cell_size_X
+      let new_pixel_offset_Y = y % ClientParams.cell_size_Y
+      
       console.log('drag map')
-      console.log(`  cell_size=${ClientParams.cell_size}`)
       console.log(`  x,y=${x},${y}`)
+      console.log(`  cell_size=${ClientParams.cell_size}`)
+      
       console.log(`  new_pixel_offset=${new_pixel_offset_X},${new_pixel_offset_Y}`)
       console.log(`     cursor=${GameState.cursorX},${GameState.cursorY}`)
       console.log(`  newCursor=${newCursorX},${newCursorY}`)
-      let cursor_displacement_X = newCursorX - GameState.cursorX
-      let cursor_displacement_Y = newCursorY - GameState.cursorY
-      //console.log(`displacement=${cursor_displacement_X},${cursor_displacement_Y}   NewCursor=${newCursorX},${newCursorY}     new_pixel_offset=${new_pixel_offset_X},${new_pixel_offset_Y}`)
+      
       GameState.cursorX = newCursorX
       GameState.cursorY = newCursorY
       ClientParams.pixel_offset_X = new_pixel_offset_X
       ClientParams.pixel_offset_Y = new_pixel_offset_Y
-      console.log(`     cursor=${GameState.cursorX},${GameState.cursorY}`)
+      TileUpdate_request()
   }
 
   function setTranslate(xPos, yPos, el) {

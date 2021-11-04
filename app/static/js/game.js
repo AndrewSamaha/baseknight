@@ -4,12 +4,13 @@ let container = null;
 let mapDiv = null;
 
 let active = false;
-let preDragX;
-let preDragY;
-let currentX;
-let currentY;
-let initialX;
-let initialY;
+let preDragX=0;
+let preDragY=0;
+let currentX=0;
+let currentY=0;
+let initialX=0;
+let initialY=0;
+
 let xOffset = 0;
 let yOffset = 0;
 
@@ -31,11 +32,15 @@ let GameState = {
 }
 
 let ClientParams = {
-    grid_height: 11,
-    grid_width: 11,
+    grid_height: 17,
+    grid_width: 17,
     cell_size: 50,
+    cell_size_X: 64,
+    cell_size_Y: 64,
     pixel_offset_X: 0,
-    pixel_offset_Y: 0
+    pixel_offset_Y: 0,
+    map_overhang_left: 0, // this will slide the left side of the map over so the edge isn't visible during a drag to the right
+    map_overhang_top: 0
 }
 
 
@@ -138,7 +143,7 @@ function create_game_ui() {
     }
     $("<style>").prop("type","text/css").html(styleHtml).appendTo("head")
 
-    const cell_height = ClientParams.cell_size, cell_width = ClientParams.cell_size;
+    const cell_height = ClientParams.cell_size_Y, cell_width = ClientParams.cell_size_X;
     const grid_height = ClientParams.grid_height, grid_width = ClientParams.grid_width;
     let gtc = '1fr', gtr = '1fr'
     for (let i=1;i<grid_width;i++) gtc += ' 1fr'
@@ -152,7 +157,6 @@ function create_game_ui() {
     }
     GameState.grid = [] 
     let i = 0
-
     // it's necessary to build this one column at a time such that
     // you can index GameState.grid using [x][y]
     for (var x = 0; x < grid_width; x++) {
@@ -160,13 +164,13 @@ function create_game_ui() {
         for (var y = 0; y < grid_height; y++) {    
             let cell = $("<div></div>")
             i++
-            let diagonal_offset = y % 2 * ClientParams.cell_size / 2
+            let diagonal_offset = 0 * y % 2 * ClientParams.cell_size_X / 2
             cell.html(i + '<br>' + x + "," + y)
             cell.addClass('cell')
             cell.css('width',cell_width)
             cell.css('height',cell_height)
-            cell.css('left', x * ClientParams.cell_size + diagonal_offset)
-            cell.css('top', y * ClientParams.cell_size)
+            cell.css('left', x * ClientParams.cell_size_X + diagonal_offset + ClientParams.map_overhang_left)
+            cell.css('top', y * ClientParams.cell_size_Y + ClientParams.map_overhang_top)
 
             $("#main").append(cell)
             column.push(cell)
@@ -220,11 +224,28 @@ function render() {
     $('#initial').html(`initial=${initialX},${initialY}`)
     $('#current').html(`current=${currentX},${currentY}`)
     $('#preDrag').html(`preDrag=${preDragX},${preDragY}`)
-    let l=-777, t=-777;
-    l = $('#draggy').position().left
-    t = $('#draggy').position().top
-    $('#draggyinfo').html(`draggy=${l},${t}`)
+    $('#mouseinfo').html(`mouse=${preDragX},${preDragY}`)
    // console.log("cursor: " + GameState.cursorX + "," + GameState.cursorY)
+}
+
+function TileUpdate_request(GameX, GameY) {
+    if (GameX == null || GameY == null) {
+        GameX = GameState.cursorX
+        GameY = GameState.cursorY
+    }
+    $.ajax({
+        url: "/getstate?x=" + GameX + '&y=' + GameY,
+        context: this,
+        success: TileUpdate_receive
+    })
+}
+
+function TileUpdate_receive(data, textStatus, jqXHR) {
+    for (let i = 0; i < data.chunk.tiles.length; i++) { 
+        let key = data.chunk.tiles[i][0] + ',' + data.chunk.tiles[i][1]
+        GameState.tiles[key] = data.chunk.tiles[i][2]
+    }
+    console.log('TileUpdate_receive: ' + GameState.tiles)
 }
 
 // MAIN
