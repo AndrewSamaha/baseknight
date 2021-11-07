@@ -1,17 +1,25 @@
 <html>
   <head>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>      
-    <!-- <script type="text/javascript" src=/js/jquery-3.6.0.min.js></script> -->
+    <!-- <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>       -->
+    <script type="text/javascript" src=/js/jquery-3.6.0.min.js></script>
     <script type="text/javascript" src="/js/crafty-min-061.js"></script>
+    <!-- <script type="text/javascript" src="/js/crafty-min.js"></script> -->
     <title>iso</title>
     <style>
         body, html { margin:0; padding: 0; overflow:hidden }
     </style>
     <script>
+        let selectedTile = null;
+        function describe(obj) {
+            console.log('describing obj, keys: ')
+            for (key in obj){
+                console.log('  ' + key)
+            }
+        }
         window.onload = function() {
             Crafty.init();
         
-            Crafty.sprite(128, "/img/sprite.png", {
+            Crafty.sprite(128, "/img/sprite_test.png", {
                 grass: [0,0,1,1],
                 stone: [1,0,1,1]
             });
@@ -19,30 +27,55 @@
             iso = Crafty.isometric.size(128);
             var z = 0;
             for(var i = 20; i >= 0; i--) {
-                for(var y = 0; y < 20; y++) {
+                for(var y = 0; y < 40; y++) {
                     var which = Crafty.math.randomInt(0,1);
                     var tile = Crafty.e("2D, Canvas, "+ (!which ? "grass" : "stone") +", Mouse")
                     .attr('z',i+1 * y+1)
               .areaMap([64,0],[128,32],[128,96],[64,128],[0,96],[0,32])
               .bind("Click", function(e) {
                         //destroy on right click
-                //right click seems not work in Mac OS
-                //delete it
-                console.log(e.button);
-                        /*if(e.button === 2)*/ this.destroy();
+                        //right click seems not work in Mac OS
+                        //delete it
+                        console.log(e.which + ' ' + JSON.stringify(e) + ' ' + e.mouseButton + ' ' + e.target + ' ' + e.eventName);
+                        if( e.mouseButton == Crafty.mouseButtons.RIGHT )
+                            console.log("Clicked right button");
+
                     }).bind("MouseOver", function() {
                         if(this.has("grass")) {
                             this.sprite(0,1,1,1);
                         } else {
                             this.sprite(1,1,1,1);
                         }
+                        selectedTile = this
                     }).bind("MouseOut", function() {
                         if(this.has("grass")) {
                             this.sprite(0,0,1,1);
                         } else {
                             this.sprite(1,0,1,1);
                         }
+                        selectedTile = null
                     });
+
+                    document.oncontextmenu = function(e) {
+                        //console.log('context menu ' + JSON.stringify(selectedTile))
+                        e.preventDefault();
+                        //code
+
+                        if (selectedTile) {
+                            
+                            console.log(selectedTile.attr('x') + ' ' + selectedTile.attr('y') + ' ' + selectedTile.attr('z'))
+                            describe(selectedTile)
+                            //selectedTile.destroy()
+                        }
+                        return false;
+                    }
+                    
+                    tile.bind("RightClick", function(e) {
+                        console.log(e.which + ' ' + JSON.stringify(e) + ' ' + e.mouseButton);
+                        if( e.mouseButton == Crafty.mouseButtons.RIGHT )
+                            console.log("Clicked right button");
+
+                    })
                     
                     iso.place(i,y,0, tile);
                 }
@@ -64,6 +97,10 @@
                 Crafty.addEvent(this, Crafty.stage.elem, "mouseup", function() {
                     Crafty.removeEvent(this, Crafty.stage.elem, "mousemove", scroll);
                 });
+            });
+
+            Crafty.bind("MouseWheelScroll", function(evt) {
+                Crafty.viewport.scale(Crafty.viewport._scale * (1 + evt.direction * 0.1));
             });
         };
         
