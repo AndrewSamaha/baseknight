@@ -11,9 +11,39 @@ class DB():
             'port':'3306',
             'database':self.DB_NAME
         }
-        self.connection = mysql.connector.connect(**self.config)
-        self.cursor = self.connection.cursor()
-    
+        self.config_nodb = {
+            'user': self.config['user'],
+            'password': self.config['password'],
+            'host': self.config['host'],
+            'port': self.config['port']
+        }
+
+        try:
+            self.connection = mysql.connector.connect(**self.config)
+            self.cursor = self.connection.cursor()
+        except mysql.connector.Error as err:
+            print("error connecting to database")
+            if err.errno == errorcode.ER_BAD_DB_ERROR:
+                print("Database {} does not exists. Creating...".format(self.DB_NAME))
+                self.connection = self.create_database()
+                print("Database {} created successfully.".format(self.DB_NAME))
+                self.connection.database = self.DB_NAME
+                self.cursor = self.connection.cursor()    
+            else:
+                print(err)
+                exit(1)
+
+    def create_database(self):
+        connection = mysql.connector.connect(**self.config_nodb)
+        cursor = connection.cursor()
+        try:
+            cursor.execute(
+            "CREATE DATABASE {} DEFAULT CHARACTER SET 'utf8'".format(self.DB_NAME))
+        except mysql.connector.Error as err:
+            print("Failed creating database: {}".format(err))
+            exit(1)
+        return connection
+
     def exec(self, query):
         try:
             self.cursor.execute(query)
