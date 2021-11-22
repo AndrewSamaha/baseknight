@@ -9,6 +9,13 @@
             // initialize kaboom context
             kaboom();
             
+            loadSprite("bean", "/img/sprites/Wraith_01_Idle_000.png")
+
+            // add something to screen
+            add([
+                sprite("bean"),
+                pos(80, 40),
+            ])
             // add a piece of text at position (120, 80)
             add([
                 text("hello"),
