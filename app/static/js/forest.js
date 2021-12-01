@@ -16,8 +16,11 @@ var ground;
 var rollingGroundSphere;
 var ball;
 var rollingSpeed = 0.008;
+var rollingSpeedMax = 0.008;
+var rollingSpeedX = 0;
+var rollingSpeedZ = 0;
 var ballRollingSpeed;
-var worldRadius = 26;
+var worldRadius = 30; //26
 var heroRadius = 0.2;
 var sphericalHelper;
 var pathAngleValues;
@@ -45,12 +48,89 @@ var highText;
 var score;
 var highScore;
 var paused;
+var keyMap;
+var controls;
+var WorldOriginPos = new THREE.Vector3(0, -24, 2);
+var CameraOriginPos = new THREE.Vector3( 0, -24 , 2);
+var CameraPointedPos = new THREE.Vector3( 50, 104, 32);
+var CameraDist = 43; //43
+var objects = []; 
+
+var moveBackward = function() {
+    rollingSpeedX -= 0.001;
+    rollingSpeedX = Math.max(-rollingSpeedMax, rollingSpeedX);
+    console.log('back')
+}
+
+const moveForward = function() {
+    rollingSpeedX += 0.001;
+    rollingSpeedX = Math.min(rollingSpeedMax, rollingSpeedX);
+    console.log('forward')
+}
+
+var moveLeft = function() {
+    rollingSpeedZ -= 0.001;
+    rollingSpeedZ = Math.max(-rollingSpeedMax, rollingSpeedZ);
+    console.log('left')
+}
+
+var moveRight = function() {
+    rollingSpeedZ += 0.001;
+    rollingSpeedZ = Math.min(rollingSpeedMax, rollingSpeedZ);
+    console.log('right')
+}
+
+function onDocumentMouseMove( event ) {    
+    event.preventDefault();
+    var mouse3D = new THREE.Vector3( 
+        ( event.clientX / window.innerWidth ) * 2 - 1,   
+        -( event.clientY / window.innerHeight ) * 2 + 1,  
+        0.5 );     
+    var raycaster =  new THREE.Raycaster();                                        
+    raycaster.setFromCamera( mouse3D, camera );
+    var intersects = raycaster.intersectObjects( objects );
+    
+    if ( intersects.length > 0 ) {
+        console.log(intersects.length)
+        console.log(intersects)
+       // intersects[ 0 ].face.color.setRGB( Math.random()* 0xffffff, Math.random()* 0xffffff, Math.random()* 0xffffff);
+        // object.material.color.setHex( Math.random() * 0xffffff );
+        intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
+    } else {
+        console.log('no intersections found')
+    }
+    //*/
+}
 
 init();
 
 function init() {
+  keyMap = {};
+  keyMap[37] = moveLeft;
+  keyMap[38] = moveForward;
+  keyMap[40] = moveBackward;
+  keyMap[39] = moveRight;
+  console.log('keys')
+  for (const key in keyMap) {
+      console.log(' ' + key)
+  }
   createScene();
+  //$( "body" ).mousemove(onDocumentMouseMove);
+  $( "body" ).click(onDocumentMouseMove);
   update();
+}
+
+function addToClickable(obj, type) {
+    if (Array.isArray(obj)) {
+        for (var i = 0; i < obj.length; i++) {
+            var o = obj[i];
+            o.type = type;
+            objects.push(o);
+        }
+    } else {
+        obj.type = type;
+        objects.push(obj);
+    }
 }
 
 function createScene() {
@@ -69,25 +149,37 @@ function createScene() {
   sceneHeight = window.innerHeight - 20;
 
   scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x8fd8ff, 0.09);
+  scene.fog = new THREE.FogExp2(0x8fd8ff, 0.04);
 
   camera = new THREE.PerspectiveCamera(60, sceneWidth / sceneHeight, 0.1, 1000);
-  camera.position.z = 8.5;
-  camera.position.y = 3.3;
+  //camera.position.z = 8.5;
+  //camera.position.y = 5.3; //3.3
+  camera.position.set( CameraOriginPos.x, CameraOriginPos.y, CameraOriginPos.z+CameraDist );
+  camera.lookAt(CameraPointedPos);
 
   renderer = new THREE.WebGLRenderer({ alpha: true });
   renderer.setClearColor(0x8fd8ff, 1);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setSize(sceneWidth, sceneHeight);
+
   dom = document.getElementById("game");
   dom.appendChild(renderer.domElement);
   
+  controls = new THREE.TrackballControls(camera, renderer.domElement);
+  controls.dynamicDampingFactor = 0.5;
+  controls.target.set( CameraOriginPos.x, CameraOriginPos.y, CameraOriginPos.z );
+
   createTreesPool();
-  addWorld();
+  addToClickable(treesPool, 'treeFromPool');
+  addToClickable(treesInPath, 'treesInPath');
+  var obj = addWorld();
+  addToClickable(obj, 'world')
   addBall();
-  addLight();
+  addLightA();
+  addLightB();
   createExplosionParticles();
+  
 
   window.addEventListener("resize", onWindowResize, false);
   document.onkeydown = handleKeyDown;
@@ -187,36 +279,33 @@ function createTreesPool() {
 
 function handleKeyDown(keyEvent) {
   var validMove = true;
-  if ((keyEvent.keyCode === 37 || keyEvent.keyCode === 65) && !paused) {
-    if (currentLane == middleLane) {
-      currentLane = leftLane;
-    } else if (currentLane == rightLane) {
-      currentLane = middleLane;
-    } else {
-      validMove = false;
+  if (!paused) {
+    if (keyEvent.keyCode === 80 || keyEvent.keyCode === 81) {
+        pausedText.innerHTML = "Game Paused";
+        paused = true;
+        console.log('keys')
+        for (const key in keyMap) {
+            console.log(' ' + key)
+        }
+        return;
     }
-  } else if ((keyEvent.keyCode === 39 || keyEvent.keyCode === 68) && !paused) {
-    if (currentLane == middleLane) {
-      currentLane = rightLane;
-    } else if (currentLane == leftLane) {
-      currentLane = middleLane;
+    if (keyMap[keyEvent.keyCode] !== undefined) {
+        console.log('key found A ' + keyEvent.keyCode)
+        keyMap[keyEvent.keyCode]();
+        return;
+    } else if (keyMap.hasOwnProperty(keyEvent.keyCode)) {
+        console.log('key found B ' + keyEvent.keyCode)
+        keyMap[keyEvent.keyCode]();
+        //console.log('key found B ' + keyEvent.keyCode)
     } else {
-      validMove = false;
-    }
-  } else if (keyEvent.keyCode === 80 || keyEvent.keyCode === 81) {
-    if (paused) {
-      pausedText.innerHTML = "";
-      paused = false;
-    } else {
-      pausedText.innerHTML = "Game Paused";
-      paused = true;
+        console.log('key NOT found ' + keyEvent.keyCode)
     }
   } else {
-    if ((keyEvent.keyCode === 38  || keyEvent.keyCode === 87 || keyEvent.keyCode === 32) && !jumping && !paused) {  
-      bounceValue = 0.11;
-      jumping = true;
+    if (keyEvent.keyCode === 80 || keyEvent.keyCode === 81) {
+        pausedText.innerHTML = "";
+        paused = false;
+        return;
     }
-    validMove = false;
   }
 }
 
@@ -321,9 +410,10 @@ function addWorld() {
   rollingGroundSphere.position.y = -24;
   rollingGroundSphere.position.z = 2;
   addWorldTrees();
+  return rollingGroundSphere;
 }
 
-function addLight() {
+function addLightA() {
   var hemisphereLight = new THREE.HemisphereLight(0xfffafa, 0x000000, 0.9);
   scene.add(hemisphereLight);
   sun = new THREE.DirectionalLight(0xcdc1c5, 0.9);
@@ -335,6 +425,20 @@ function addLight() {
   sun.shadow.camera.near = 0.5;
   sun.shadow.camera.far = 50;
 }
+
+function addLightB() {
+    var hemisphereLight = new THREE.HemisphereLight(0xfffafa, 0x000000, 0.9);
+    scene.add(hemisphereLight);
+    sun = new THREE.DirectionalLight(0xcdc1c5, 0.9);
+    sun.position.set(-12, -6, 7);
+    sun.castShadow = true;
+    scene.add(sun);
+    sun.shadow.mapSize.width = 256;
+    sun.shadow.mapSize.height = 256;
+    sun.shadow.camera.near = 0.5;
+    sun.shadow.camera.far = 50;
+  }
+  
 function addPathTree() {
   var options = [0, 1, 2];
   var lane = Math.floor(Math.random() * 3);
@@ -383,6 +487,7 @@ function addTree(inPath, row, isLeft) {
   newTree.rotation.x += Math.random() * ((2 * Math.PI) / 10) + -Math.PI / 10;
 
   rollingGroundSphere.add(newTree);
+  addToClickable(newTree, 'newTree');
 }
 
 function createTree() {
@@ -475,7 +580,9 @@ function tightenTree(vertices, sides, currentTier) {
 
 function update() {
   if (!paused) {
-    rollingGroundSphere.rotation.x += rollingSpeed;
+    rollingGroundSphere.rotation.x += rollingSpeedX; // forwards
+    //rollingGroundSphere.rotation.y += rollingSpeed; // turning left/right
+    rollingGroundSphere.rotation.z += rollingSpeedZ; // forwards
     ball.rotation.x -= ballRollingSpeed;
     if (ball.position.y <= heroBaseY) {
       jumping = false;
@@ -498,6 +605,7 @@ function update() {
   
     doTreeLogic();
     doExplosionLogic();
+    controls.update();
     render();
     doDifficultyLogic();
   }
@@ -678,3 +786,4 @@ function detectSwipe(id, func, deltaMin = 90) {
 }
 
 detectSwipe('body', (el, dir) => handleSwipe(dir));
+
