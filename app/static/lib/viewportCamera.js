@@ -3,12 +3,15 @@ import * as THREE from 'three';
 class ViewportCamera {
     constructor ( ) {
       const vC = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+      
       vC.position.set(0, 25, 20);
       vC.rotation.set(-Math.PI*.35, 0, 0);
       vC.velocity = new THREE.Vector2();
       vC.moveFriction = 0.075;
       vC.maxVelocity = .5;
       vC.keysDown = {};
+      vC.worldPosition = new THREE.Vector3();
+
       vC.translate = (x, z) => {
         vC.position.x += x;
         vC.position.z += z;
@@ -34,9 +37,13 @@ class ViewportCamera {
         const pushSpeed = 0.5;
         const keyMoveMap = {
           ArrowDown: () => {vC.push(0, pushSpeed)},
+          KeyS: () => {vC.push(0, pushSpeed)},
           ArrowRight: () => {vC.push(pushSpeed, 0)},
+          KeyD: () => {vC.push(pushSpeed, 0)},
           ArrowLeft: () => {vC.push(-pushSpeed, 0)},
-          ArrowUp: () => {vC.push(0, -pushSpeed)}
+          KeyA: () => {vC.push(-pushSpeed, 0)},
+          ArrowUp: () => {vC.push(0, -pushSpeed)},
+          KeyW: () => {vC.push(0, -pushSpeed)}
         };
         if (keyMoveMap.hasOwnProperty(keyCode)) {
           if (event === 'down') {
@@ -44,9 +51,8 @@ class ViewportCamera {
           } else if (event === 'up') {
             delete vC.keysDown[keyCode];
           }
-          //console.log('vC.keysDown',vC.keysDown);
         } else {
-          console.log('key not recognized');
+          console.log('key not recognized',keyCode);
         }
         for (const key in vC.keysdown) vC.keysDown[key]();
       }

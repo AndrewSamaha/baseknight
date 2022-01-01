@@ -14,7 +14,6 @@ class ViewportTiles {
   
       const tileSize = 5;
       const tiles = new Array(width * depth);
-      console.log(tiles.length);
       const velocity = new THREE.Vector2();
       const moveFriction = 0.075;
       const maxVelocity = .5;
