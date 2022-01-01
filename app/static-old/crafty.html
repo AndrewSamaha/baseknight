@@ -1,0 +1,143 @@
+<html>
+  <head>
+    <!-- <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>       -->
+    <script type="text/javascript" src=/js/jquery-3.6.0.min.js></script>
+    <script type="text/javascript" src="/js/crafty-min-061.js"></script>
+    <!-- <script type="text/javascript" src="/js/crafty-min.js"></script> -->
+    <title>iso</title>
+    <style>
+        body, html { margin:0; padding: 0; overflow:hidden }
+    </style>
+    <script>
+        let selectedTile = null;
+        let GameParams = {
+            width: 100,
+            height: 200
+        }
+        let ClientParams = {
+            x_min: -64,
+            y_min: -64
+        }
+        function describe(obj) {
+            console.log('describing obj, keys: ')
+            for (key in obj){
+                console.log('  ' + key)
+            }
+        }
+
+        var assetsObj = {
+            "sprites": {
+                "/img/walker.png": {
+                    tile: 104,
+                    tileh: 114,
+                    map: {
+                        walker_start: [0, 0],
+                        walker_middle: [7, 0],
+                        walker_end: [7, 1]
+                    }
+                }
+            }
+        };
+
+        function go() {
+            var walker = Crafty.e('2D, Canvas, walker_start, SpriteAnimation')
+                .reel("walking", 1000, [
+                    [0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [6, 0], [7, 0],
+                    [0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1], [7, 1]
+                ])
+                .animate("walking", -1);
+        }
+
+        window.onload = function() {
+            Crafty.init();
+        
+            
+
+            Crafty.sprite(128, "/img/sprite_test.png", {
+                grass: [0,0,1,1],
+                stone: [1,0,1,1]
+            });
+        
+            iso = Crafty.isometric.size(128);
+            var z = 0;
+            for(var i = GameParams.width; i >= 0; i--) {
+                for(var y = 0; y < GameParams.height; y++) {
+                    var which = Crafty.math.randomInt(0,1);
+                    var tile = Crafty.e("2D, Canvas, "+ (!which ? "grass" : "stone") +", Mouse")
+                        .attr('z',i+1 * y+1)
+                        .areaMap([64,0],[128,32],[128,96],[64,128],[0,96],[0,32])
+                        .bind("Click", function(e) {                        
+                            //console.log(e.which + ' ' + JSON.stringify(e) + ' ' + e.mouseButton + ' ' + e.target + ' ' + e.eventName);
+                            console.log('leftclick: ' + selectedTile.i + ' ' + selectedTile.y)
+                        }).bind("MouseOver", function() {
+                            if(this.has("grass")) {
+                                this.sprite(0,1,1,1);
+                            } else {
+                                this.sprite(1,1,1,1);
+                            }
+                            selectedTile = this
+                        }).bind("MouseOut", function() {
+                            if(this.has("grass")) {
+                                this.sprite(0,0,1,1);
+                            } else {
+                                this.sprite(1,0,1,1);
+                            }
+                            selectedTile = null
+                        });
+
+                    document.oncontextmenu = function(e) {
+                        //console.log('context menu ' + JSON.stringify(selectedTile))
+                        e.preventDefault();
+                        //code
+
+                        if (selectedTile) {
+                            
+                            console.log('rightclick: ' + selectedTile.i + ' ' + selectedTile.y)
+                            //describe(selectedTile)
+                            selectedTile.destroy()
+                        }
+                        return false;
+                    }
+                    tile.i = i
+                    tile.y = y
+                    iso.place(i,y,0, tile);
+                }
+            }
+            
+            Crafty.addEvent(this, Crafty.stage.elem, "mousedown", function(e) {
+                if(e.button > 1) return;
+                var base = {x: e.clientX, y: e.clientY};
+        
+                function scroll(e) {
+                    var dx = base.x - e.clientX,
+                        dy = base.y - e.clientY;
+                        base = {x: e.clientX, y: e.clientY};
+                    Crafty.viewport.x -= dx;
+                    Crafty.viewport.y -= dy;
+                    Crafty.viewport.x = Math.min(ClientParams.x_min, Crafty.viewport.x)
+                    Crafty.viewport.y = Math.min(ClientParams.y_min, Crafty.viewport.y)
+                    //console.log(`viewport=${Crafty.viewport.x},${Crafty.viewport.y} viewport.size=${Crafty.viewport.width},${Crafty.viewport.height} window=${$(document).width()},${$(document).height()}`)
+                };
+        
+                Crafty.addEvent(this, Crafty.stage.elem, "mousemove", scroll);
+                Crafty.addEvent(this, Crafty.stage.elem, "mouseup", function() {
+                    Crafty.removeEvent(this, Crafty.stage.elem, "mousemove", scroll);
+                });
+            });
+
+            Crafty.bind("MouseWheelScroll", function(evt) {
+                Crafty.viewport.scale(Crafty.viewport._scale * (1 + evt.direction * 0.1));
+            });
+
+            Crafty.viewport.x = ClientParams.x_min
+            Crafty.viewport.y = ClientParams.y_min
+
+            Crafty.load(assetsObj, go);
+        };
+        
+            </script>
+  </head>
+  <body>
+
+  </body>
+</html>

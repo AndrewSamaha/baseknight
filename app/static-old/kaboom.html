@@ -1,0 +1,78 @@
+<html>
+    <head>
+        <title>kabook</title>
+        <script type="module">
+
+            // import kaboom lib
+            import kaboom from "/js/kaboom.mjs";
+            
+            // initialize kaboom context
+            kaboom({
+                background: [ 0, 0, 0, ]
+            });
+            
+            loadSprite("bean", "/img/sprites/Wraith_01_Idle_000.png")
+
+            // add something to screen
+            const bean = add([
+                sprite("bean"),
+                pos(80, 40),
+                scale(.5),
+                rotate(30),
+                color(0,0,255),
+                area(),
+                body()
+            ]);
+            onKeyPress("space", () => {
+                bean.jump();
+            })
+            add([
+                rect(width(), 48),
+                pos(0, height() - 48),
+                outline(4),
+                area(),
+                solid(),
+                color(127, 200, 255),
+            ])
+
+            addLevel([
+                "                          $",
+                "                          $",
+                "           $$         =   $",
+                "  %      ====         =   $",
+                "                      =    ",
+                "       ^^      = >    =   &",
+                "===========================",
+            ], {
+                // define the size of each block
+                width: 32,
+                height: 32,
+                // define what each symbol means, by a function returning a component list (what will be passed to add())
+                "=": () => [
+                    sprite("floor"),
+                    area(),
+                    solid(),
+                ],
+                "$": () => [
+                    sprite("coin"),
+                    area(),
+                    pos(0, -9),
+                ],
+                "^": () => [
+                    sprite("spike"),
+                    area(),
+                    "danger",
+                ],
+            });
+
+            // add a piece of text at position (120, 80)
+            add([
+                text("hello"),
+                pos(120, 80),
+            ]);
+
+           
+
+            </script>
+    </head>
+</html>
