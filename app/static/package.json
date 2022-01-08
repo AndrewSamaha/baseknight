@@ -4,12 +4,16 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "nodemon index.js"
   },
   "devDependencies": {
     "vite": "^2.7.2"
   },
   "dependencies": {
+    "@hapi/hapi": "^20.2.1",
+    "@hapi/inert": "^6.0.4",
+    "nodemon": "^2.0.15",
     "three": "^0.136.0"
   }
 }
