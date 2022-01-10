@@ -34,6 +34,7 @@ class WorldServer():
                 for index,val in enumerate(corner_states[0]):
                     if val is None:
                         xy = self.db.cursor.column_names[index].split(',')
+                        print(f"xy: {xy}")
                         print(f"generating terrain near {xy[0]},{xy[1]}")
                         self.tg.generateTerrainNearPoint({xy[0]},{xy[1]})
         
